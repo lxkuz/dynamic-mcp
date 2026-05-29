@@ -1,0 +1,11 @@
+<h1>Загрузка книги</h1>
+<p class="meta">Выберите файл в формате FictionBook (.fb2) или PDF (.pdf). После обработки покажем список API-эндпоинтов для этой книги.</p>
+
+<% if @error.present? %>
+  <p class="error"><%= @error %></p>
+<% end %>
+
+<%= form_with url: upload_path, method: :post, multipart: true do %>
+  <%= file_field_tag :file, accept: ".fb2,.pdf,application/xml,text/xml,application/pdf", required: true %>
+  <%= submit_tag "Загрузить" %>
+<% end %>

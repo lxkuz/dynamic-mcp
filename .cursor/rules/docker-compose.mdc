@@ -1,0 +1,11 @@
+---
+description: Docker Compose — только через дефис
+globs:
+alwaysApply: true
+---
+
+# Docker Compose — только через дефис
+
+В этом репозитории всегда пиши команды через **`docker-compose`** (с дефисом), а не через `docker compose` (с пробелом).
+
+На сервере в deploy-скриптах автоматически выбирается `docker-compose` или `docker compose` — что установлено.

@@ -1,0 +1,73 @@
+services:
+  # Миграции SQLite (books, sections, pages, active_storage)
+  web_migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - app_storage:/rails/storage
+    environment:
+      - RAILS_ENV=production
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-please-set-secret-key-base}
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        echo "[web_migrate] Running rails db:prepare..."
+        ./bin/rails db:prepare 2>&1 || { echo "[web_migrate] FAILED with exit $?"; exit 1; }
+        echo "[web_migrate] Done."
+    restart: "no"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      web_migrate:
+        condition: service_completed_successfully
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      - RAILS_ENV=production
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-please-set-secret-key-base}
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - RAILS_LOG_LEVEL=${RAILS_LOG_LEVEL:-info}
+      - PUBLIC_HOST=${PUBLIC_HOST:-localhost}
+      - PUBLIC_SCHEME=${PUBLIC_SCHEME:-http}
+      - WEB_PORT=${WEB_PORT:-3020}
+    volumes:
+      - app_storage:/rails/storage
+    ports:
+      - "${WEB_PORT:-3020}:3000"
+    command: ["./bin/rails", "server", "-b", "0.0.0.0", "-p", "3000"]
+
+  # Elasticsearch: только внутри сети compose (http://elasticsearch:9200).
+  # При смене major-версии: docker-compose down && docker volume rm dynamic-mcp_es_data
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - bootstrap.memory_lock=true
+      - action.auto_create_index=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+volumes:
+  app_storage:
+  es_data:

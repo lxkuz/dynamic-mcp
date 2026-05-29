@@ -1,0 +1,80 @@
+<h1>MCP — <%= @book.title %></h1>
+
+<p class="meta">
+  MCP встроен в веб-приложение — <strong>тот же хост и порт</strong>, что и сайт.
+  Каждая книга — свой endpoint по <code>uid</code>.
+</p>
+
+<dl class="meta">
+  <dt>UID книги</dt>
+  <dd><code><%= @book.uid %></code></dd>
+  <dt>Название</dt><dd><%= @book.title %></dd>
+  <dt>Автор</dt><dd><%= @book.author.presence || "—" %></dd>
+</dl>
+
+<% unless @book.ready? %>
+  <p class="error">Книга ещё не готова (status: <%= @book.status %>).</p>
+<% else %>
+  <h2>Подключение (SSE)</h2>
+  <p class="meta">Имя сервера: <code><%= @doc.server_name %></code></p>
+
+  <table>
+    <tbody>
+      <tr>
+        <th>SSE</th>
+        <td><code><%= @doc.sse_url %></code></td>
+      </tr>
+      <tr>
+        <th>Messages</th>
+        <td><code><%= @doc.messages_url %></code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Cursor / Claude Desktop</h2>
+  <p class="meta">Добавьте в <code>~/.cursor/mcp.json</code>:</p>
+  <pre><code><%= @doc.cursor_config_json %></code></pre>
+
+  <h2>Tools</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Tool</th>
+        <th>Описание</th>
+        <th>Аргументы</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @doc.tools.each do |tool| %>
+        <tr>
+          <td><code><%= tool.name %></code></td>
+          <td><%= tool.description %></td>
+          <td><code><%= tool.arguments %></code></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
+
+<h2>REST API (та же книга)</h2>
+<p class="meta">Базовый URL: <code><%= request.base_url %></code></p>
+<table>
+  <thead>
+    <tr>
+      <th>Метод</th>
+      <th>URL</th>
+      <th>Описание</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @api_endpoints.each do |ep| %>
+      <tr>
+        <td><strong><%= ep.method %></strong></td>
+        <td><code><%= ep.path %></code></td>
+        <td><%= ep.description %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<p><%= link_to "← Загрузить другую книгу", root_path %></p>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+  <description>
+    <title-info>
+      <book-title>Тестовая книга</book-title>
+      <author>
+        <first-name>Иван</first-name>
+        <last-name>Тестов</last-name>
+      </author>
+    </title-info>
+  </description>
+  <body>
+    <section>
+      <title><p>Глава 1</p></title>
+      <p>Первый абзац главы один. Здесь упоминается elasticsearch для поиска.</p>
+      <p>Второй абзац главы один.</p>
+      <section>
+        <title><p>§1.1 Введение</p></title>
+        <p>Текст подраздела про оглавление.</p>
+      </section>
+    </section>
+    <section>
+      <title><p>Глава 2</p></title>
+      <p>Начало второй главы. Виртуальные страницы строятся из параграфов.</p>
+    </section>
+  </body>
+</FictionBook>

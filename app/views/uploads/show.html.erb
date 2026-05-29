@@ -1,0 +1,45 @@
+<h1>Книга загружена</h1>
+
+<dl class="meta">
+  <dt>UID</dt><dd><code><%= @book.uid %></code></dd>
+  <dt>Название</dt><dd><%= @book.title %></dd>
+  <dt>Автор</dt><dd><%= @book.author.presence || "—" %></dd>
+  <dt>Статус</dt><dd><%= @book.status %></dd>
+  <dt>Формат</dt><dd><%= @book.source_format.upcase %></dd>
+  <dt>Страниц</dt><dd><%= @book.page_count %><%= @book.physical_pages? ? " (PDF)" : " (виртуальные)" %></dd>
+</dl>
+
+<h2>MCP для ИИ-агента</h2>
+<p>
+  <%= link_to "Документация MCP →", book_mcp_path(@book.uid) %>
+</p>
+<p class="meta"><code><%= @mcp_doc_url %></code></p>
+
+<h2>REST API</h2>
+<p class="meta">Базовый URL: <code><%= request.base_url %></code></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Метод</th>
+      <th>URL</th>
+      <th>Описание</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @endpoints.each do |ep| %>
+      <tr>
+        <td><strong><%= ep.method %></strong></td>
+        <td>
+          <code><%= ep.path %></code>
+          <% if ep.example.present? && ep.example != ep.path %>
+            <div class="example">Пример: <code><%= ep.example %></code></div>
+          <% end %>
+        </td>
+        <td><%= ep.description %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<p><%= link_to "Загрузить другую книгу", root_path %></p>

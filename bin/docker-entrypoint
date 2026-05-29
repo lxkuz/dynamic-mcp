@@ -1,0 +1,27 @@
+#!/bin/bash -e
+
+if [ -z "${LD_PRELOAD+x}" ]; then
+  LD_PRELOAD=$(find /usr/lib -name libjemalloc.so.2 -print -quit)
+  export LD_PRELOAD
+fi
+
+mkdir -p /rails/storage /rails/tmp/storage
+chown -R rails:rails /rails/storage /rails/tmp
+
+if [ "$1" = "./bin/rails" ] && [ "$2" = "server" ]; then
+  ok=0
+  for i in 1 2 3 4 5; do
+    if gosu rails ./bin/rails db:prepare; then
+      ok=1
+      break
+    fi
+    echo "[docker-entrypoint] db:prepare attempt $i failed, retrying in 3s..."
+    sleep 3
+  done
+  if [ "$ok" -eq 0 ]; then
+    echo "[docker-entrypoint] db:prepare failed after 5 attempts"
+    exit 1
+  fi
+fi
+
+exec gosu rails "$@"

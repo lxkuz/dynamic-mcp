@@ -11,6 +11,11 @@ RUN apt-get update -qq && \
     GOSU_VERSION=1.16 && \
     curl -sSL -o /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-$(dpkg --print-architecture)" && \
     chmod +x /usr/local/bin/gosu && \
+    DOCKER_VERSION=27.5.1 && \
+    ARCH="$(dpkg --print-architecture)" && \
+    case "$ARCH" in amd64) DOCKER_ARCH=x86_64 ;; arm64) DOCKER_ARCH=aarch64 ;; *) echo "unsupported arch: $ARCH" >&2; exit 1 ;; esac && \
+    curl -fsSL "https://download.docker.com/linux/static/stable/${DOCKER_ARCH}/docker-${DOCKER_VERSION}.tgz" \
+      | tar xz -C /usr/local/bin --strip-components=1 docker/docker && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 ENV RAILS_ENV="production" \

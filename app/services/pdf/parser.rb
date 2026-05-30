@@ -8,11 +8,12 @@ module Pdf
 
     ANONYMOUS_METADATA = /\A\(anonymous\)\z/i
 
-    def self.parse(io)
-      new(io).parse
+    def self.parse(io, toc_entries: nil)
+      new(io, toc_entries: toc_entries).parse
     end
 
-    def initialize(io)
+    def initialize(io, toc_entries: nil)
+      @toc_entries = toc_entries
       @reader = PDF::Reader.new(io)
     rescue PDF::Reader::EncryptedPDFError
       raise ArgumentError, "PDF защищён паролем"
@@ -26,27 +27,27 @@ module Pdf
 
       title = document_title(page_texts)
       author = document_author
+      sections = sections_for(page_texts, title)
       reading_text = page_texts.join("\n\n")
 
       Books::ParsedDocument.new(
         title: title,
         author: author,
-        sections: [
-          Books::ParsedSection.new(
-            title: title,
-            plain_text: reading_text,
-            depth: 0,
-            position: 0,
-            path: title,
-            children: []
-          )
-        ],
+        sections: sections,
         reading_text: reading_text,
         pages: page_texts
       )
     end
 
     private
+
+    def sections_for(page_texts, title)
+      if @toc_entries.present?
+        Pdf::TocSectionBuilder.build(page_texts, toc_entries: @toc_entries)
+      else
+        SectionBuilder.build(page_texts, book_title: title)
+      end
+    end
 
     def extract_page_texts
       (1..@reader.page_count).map { |number| normalize_text(@reader.page(number).text) }

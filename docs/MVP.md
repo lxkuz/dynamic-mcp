@@ -38,4 +38,17 @@ Rails 8, SQLite, Elasticsearch, fast-mcp (Rack middleware), docker-compose
 | Формат | Оглавление | Страницы |
 |--------|------------|----------|
 | FB2 | дерево `<section>` | виртуальные (~1800 символов) |
-| PDF | одна секция (MVP) | физические страницы PDF |
+| PDF | главы по эвристике (Глава N / заголовки) + `page_start`/`page_end` | физические страницы PDF |
+
+## API (дополнительно)
+
+| Метод | Путь |
+|-------|------|
+| GET | `/api/v1/books/:uid/pages?from=&to=` — диапазон страниц (макс. 20) |
+| GET | `/api/v1/books/:uid/sections/:id` — текст секции |
+| GET | `.../search?q=&context_chars=600` — поиск с расширенным контекстом |
+
+## MCP tools
+
+`book_info`, `list_toc`, `search_toc`, `get_page`, `get_pages`, `get_section`, `search_fulltext` (параметр `context_chars`).  
+Не использовать ключ `content` в ответах tools — только `text` (ограничение fast-mcp).

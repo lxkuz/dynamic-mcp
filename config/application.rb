@@ -29,6 +29,12 @@ module DynamicMcp
     config.autoload_lib(ignore: %w[assets tasks])
     config.autoload_paths << Rails.root.join("app/middleware")
     config.eager_load_paths << Rails.root.join("app/middleware")
+    config.autoload_paths << Rails.root.join("app/ai")
+    config.eager_load_paths << Rails.root.join("app/ai")
+    config.autoload_paths << Rails.root.join("app/ai/agents")
+    config.autoload_paths << Rails.root.join("app/ai/prompts")
+    config.eager_load_paths << Rails.root.join("app/ai/agents")
+    config.eager_load_paths << Rails.root.join("app/ai/prompts")
 
     # Configuration for the application, engines, and railties goes here.
     #

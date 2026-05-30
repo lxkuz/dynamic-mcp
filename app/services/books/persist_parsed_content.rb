@@ -36,7 +36,9 @@ module Books
           path: node.path,
           depth: node.depth,
           position: node.position,
-          plain_text: node.plain_text
+          plain_text: node.plain_text,
+          page_start: node.page_start,
+          page_end: node.page_end
         )
         persist_sections(node.children, parent: section)
       end

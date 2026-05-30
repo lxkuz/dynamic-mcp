@@ -2,7 +2,7 @@
 
 REST API для FB2 и PDF: оглавление, страницы, полнотекстовый поиск (Elasticsearch). См. [docs/MVP.md](docs/MVP.md).
 
-**Запуск только через Docker Compose** (по образцу [armchair-expert](https://github.com/) — `web_migrate` + `web` + `elasticsearch`).
+**Запуск только через Docker Compose** — `web_migrate` + `web` + `sidekiq` + `redis` + `elasticsearch`.
 
 ## Быстрый старт
 
@@ -10,7 +10,7 @@ REST API для FB2 и PDF: оглавление, страницы, полнот
 cp env.example .env
 # SECRET_KEY_BASE=$(bin/rails secret)  — или сгенерируйте один раз локально
 
-docker-compose build
+docker-compose build parser_sandbox web sidekiq
 docker-compose up -d
 ```
 
@@ -18,7 +18,8 @@ docker-compose up -d
 
 В браузере: **http://localhost:3020/** — форма загрузки FB2 или PDF.
 
-После загрузки:
+После загрузки импорт идёт **в фоне (Sidekiq)**. Страница `/uploads/{uid}` показывает прогресс.
+
 - REST API по `uid` книги
 - **MCP SSE:** `http://localhost:3020/books/{uid}/mcp/sse` (тот же порт, что и сайт)
 - **MCP docs:** `http://localhost:3020/books/{uid}/mcp`
@@ -36,18 +37,35 @@ curl http://localhost:3020/books/{uid}/mcp
 
 | Метод | Путь |
 |-------|------|
-| POST | `/api/v1/books` — загрузка `.fb2` или `.pdf` (в ответе `uid`, `mcp_documentation_url`) |
+| POST | `/api/v1/books` — загрузка файла книги (любой формат при AI-импорте) |
 | GET | `/api/v1/books/:uid` |
 | GET | `/books/:uid/mcp` — документация MCP для агента |
 | GET | `/api/v1/books/:uid/toc` |
 | GET | `/api/v1/books/:uid/toc/search?q=` |
 | GET | `/api/v1/books/:uid/pages/:number` |
-| GET | `/api/v1/books/:uid/search?q=` |
+| GET | `/api/v1/books/:uid/pages?from=1&to=3` — диапазон страниц |
+| GET | `/api/v1/books/:uid/sections/:id` — секция оглавления |
+| GET | `/api/v1/books/:uid/search?q=` (`context_chars` опционально) |
+
+| GET | `/uploads/:uid/status` — JSON статус импорта |
+
+## AI-импорт (DeepSeek + ActiveHarness)
+
+По умолчанию без `DEEPSEEK_API_KEY` используется **legacy**-парсер (`Fb2`/`Pdf`).
+
+```bash
+# .env
+AI_IMPORT_ENABLED=true
+DEEPSEEK_API_KEY=sk-...
+```
+
+План и архитектура: [docs/AI_IMPORT_PLAN.md](docs/AI_IMPORT_PLAN.md)
 
 ## Команды
 
 ```bash
 docker-compose logs -f web
+docker-compose logs -f sidekiq
 docker-compose run --rm web_migrate
 docker-compose down
 ```

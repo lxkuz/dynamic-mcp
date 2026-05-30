@@ -1,0 +1,4 @@
+:concurrency: 2
+:queues:
+  - [book_imports, 2]
+  - [default, 1]

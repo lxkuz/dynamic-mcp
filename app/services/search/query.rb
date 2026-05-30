@@ -1,18 +1,19 @@
 module Search
   class Query
-    def self.fulltext(book_id:, query:, size: 20)
-      new(book_id: book_id, query: query, doc_type: "page", size: size).run
+    def self.fulltext(book_id:, query:, size: 20, context_chars: 0)
+      new(book_id: book_id, query: query, doc_type: "page", size: size, context_chars: context_chars).run
     end
 
-    def self.toc(book_id:, query:, size: 50)
-      new(book_id: book_id, query: query, doc_type: "toc", size: size).run
+    def self.toc(book_id:, query:, size: 50, context_chars: 0)
+      new(book_id: book_id, query: query, doc_type: "toc", size: size, context_chars: context_chars).run
     end
 
-    def initialize(book_id:, query:, doc_type:, size:)
+    def initialize(book_id:, query:, doc_type:, size:, context_chars: 0)
       @book_id = book_id
       @query = query
       @doc_type = doc_type
       @size = size
+      @context_chars = context_chars.to_i
     end
 
     def run
@@ -49,10 +50,24 @@ module Search
         }
       )
 
-      response["hits"]["hits"].map { |hit| format_hit(hit) }
+      response["hits"]["hits"].map { |hit| enrich_hit(format_hit(hit)) }
     end
 
     private
+
+    def enrich_hit(hit)
+      return hit if @context_chars <= 0
+
+      if hit[:page_number]
+        page = Page.joins(:book).find_by(books: { id: @book_id }, number: hit[:page_number])
+        hit[:context] = ::Books::PageContext.for_page(page, query: @query, chars: @context_chars) if page
+      elsif hit[:section_id]
+        section = Section.find_by(id: hit[:section_id], book_id: @book_id)
+        hit[:context] = section.plain_text.to_s.truncate(@context_chars) if section
+      end
+
+      hit
+    end
 
     def format_hit(hit)
       source = hit["_source"]

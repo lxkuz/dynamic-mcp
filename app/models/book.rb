@@ -1,16 +1,17 @@
 class Book < ApplicationRecord
   CHARS_PER_PAGE = 1800
-  SOURCE_FORMATS = %w[fb2 pdf].freeze
+  SOURCE_FORMAT_SLUG = /\A[a-z0-9][a-z0-9._-]*\z/
   MCP_STATUSES = %w[stopped starting running failed].freeze
 
   has_many :sections, -> { order(:depth, :position) }, dependent: :destroy
   has_many :pages, -> { order(:number) }, dependent: :destroy
+  has_one :book_import, dependent: :destroy
   has_one_attached :source_file
 
   STATUSES = %w[pending processing ready failed].freeze
 
   validates :status, inclusion: { in: STATUSES }
-  validates :source_format, inclusion: { in: SOURCE_FORMATS }
+  validates :source_format, presence: true, length: { maximum: 32 }, format: { with: SOURCE_FORMAT_SLUG }
   validates :mcp_status, inclusion: { in: MCP_STATUSES }
   validates :uid, presence: true, uniqueness: true
 

@@ -24,4 +24,9 @@ if [ "$1" = "./bin/rails" ] && [ "$2" = "server" ]; then
   fi
 fi
 
+# Sidekiq runs parser scripts via Docker socket — keep root (compose sets user: root).
+if [ "$1" = "bundle" ] && [ "$2" = "exec" ] && [ "$3" = "sidekiq" ]; then
+  exec "$@"
+fi
+
 exec gosu rails "$@"

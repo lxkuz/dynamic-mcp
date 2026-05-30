@@ -4,30 +4,42 @@ class BookEndpointsPresenter
   def initialize(book, base_url:)
     @book = book
     @base_url = base_url.to_s.chomp("/")
-    @uid = book.uid
+    @key = book.uid
   end
 
   def endpoints
     [
-      Endpoint.new("GET", api_path("/api/v1/books/#{@uid}"), "Метаданные книги", nil),
-      Endpoint.new("GET", api_path("/api/v1/books/#{@uid}/toc"), "Всё оглавление (дерево секций)", nil),
+      Endpoint.new("GET", api_path("/api/v1/books/#{@key}"), "Метаданные книги", nil),
+      Endpoint.new("GET", api_path("/api/v1/books/#{@key}/toc"), "Всё оглавление (дерево секций)", nil),
       Endpoint.new(
         "GET",
-        api_path("/api/v1/books/#{@uid}/toc/search"),
+        api_path("/api/v1/books/#{@key}/sections/1"),
+        "Текст секции оглавления по id",
+        api_path("/api/v1/books/#{@key}/sections/1")
+      ),
+      Endpoint.new(
+        "GET",
+        api_path("/api/v1/books/#{@key}/toc/search"),
         "Поиск по заголовкам оглавления",
-        "#{api_path("/api/v1/books/#{@uid}/toc/search")}?q=глава"
+        "#{api_path("/api/v1/books/#{@key}/toc/search")}?q=глава"
       ),
       Endpoint.new(
         "GET",
-        api_path("/api/v1/books/#{@uid}/pages/1"),
+        api_path("/api/v1/books/#{@key}/pages/1"),
         page_endpoint_description,
-        api_path("/api/v1/books/#{@uid}/pages/1")
+        api_path("/api/v1/books/#{@key}/pages/1")
       ),
       Endpoint.new(
         "GET",
-        api_path("/api/v1/books/#{@uid}/search"),
+        api_path("/api/v1/books/#{@key}/pages"),
+        "Диапазон страниц (from, to)",
+        "#{api_path("/api/v1/books/#{@key}/pages")}?from=1&to=3"
+      ),
+      Endpoint.new(
+        "GET",
+        api_path("/api/v1/books/#{@key}/search"),
         "Полнотекстовый поиск по книге (Elasticsearch)",
-        "#{api_path("/api/v1/books/#{@uid}/search")}?q=текст"
+        "#{api_path("/api/v1/books/#{@key}/search")}?q=текст&context_chars=600"
       )
     ]
   end

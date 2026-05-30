@@ -23,6 +23,7 @@ module Api
       def book_json(book)
         {
           uid: book.uid,
+          mcp_server_name: Mcp::SERVER_NAME,
           title: book.title,
           author: book.author,
           status: book.status,
@@ -31,9 +32,26 @@ module Api
           page_count: book.page_count,
           chars_per_page: book.chars_per_page,
           physical_pages: book.physical_pages?,
+          structured_toc: ::Books::McpMetadata.for(book)[:structured_toc],
+          recommended_tools: ::Books::McpMetadata.for(book)[:recommended_tools],
           mcp_sse_url: mcp_sse_url_for(book),
           mcp_documentation_url: Mcp::DocumentationUrl.for(book),
+          import: import_json(book),
           created_at: book.created_at
+        }
+      end
+
+      def import_json(book)
+        import = book.book_import
+        return nil unless import
+
+        {
+          status: import.status,
+          mode: import.mode,
+          iteration: import.iteration,
+          error_message: import.error_message,
+          started_at: import.started_at,
+          finished_at: import.finished_at
         }
       end
 

@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 # Probe MCP via SSE on the web port (same process as Rails).
-# Usage: BOOK_UID=... BASE_URL=http://127.0.0.1:3000 ruby script/mcp_probe.rb
+# Usage: BOOK_UID=... BASE_URL=http://127.0.0.1:3020 ruby script/mcp_probe.rb
 
 require "json"
 require "net/http"
@@ -63,15 +63,25 @@ def rpc(queue, url, method, params, id)
   nil
 end
 
+def tool_result(response)
+  response.dig("result", "content", 0, "text") || response["result"]
+end
+
 rpc(queue, MSG, "initialize", { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "probe", version: "1" } }, 1)
 Net::HTTP.post(URI(MSG), { jsonrpc: "2.0", method: "notifications/initialized", params: {} }.to_json, "Content-Type" => "application/json")
 
-result = rpc(queue, MSG, "tools/call", { name: "book_info", arguments: {} }, 2)
-puts "book_info:"
-puts JSON.pretty_generate(result)
+%w[book_info get_page get_pages search_fulltext].each_with_index do |tool, index|
+  args = case tool
+         when "get_page" then { name: tool, arguments: { number: 1 } }
+         when "get_pages" then { name: tool, arguments: { from: 1, to: 2 } }
+         when "search_fulltext" then { name: tool, arguments: { query: "оцифровка", limit: 2, context_chars: 200 } }
+         else { name: tool, arguments: {} }
+         end
 
-page_result = rpc(queue, MSG, "tools/call", { name: "get_page", arguments: { number: 1 } }, 3)
-puts "get_page:"
-puts JSON.pretty_generate(page_result)
+  result = rpc(queue, MSG, "tools/call", args, 10 + index)
+  puts "#{tool}:"
+  puts JSON.pretty_generate(tool_result(result))
+  puts
+end
 
 stop = true

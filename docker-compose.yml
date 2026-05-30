@@ -1,4 +1,18 @@
 services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+  parser_sandbox:
+    build:
+      context: .
+      dockerfile: docker/parser-sandbox/Dockerfile
+    image: dynamic-mcp-parser-sandbox:latest
+    profiles:
+      - build-only
+
   # Миграции SQLite (books, sections, pages, active_storage)
   web_migrate:
     build:
@@ -10,6 +24,7 @@ services:
       - RAILS_ENV=production
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-please-set-secret-key-base}
       - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - REDIS_URL=redis://redis:6379/0
     command:
       - sh
       - -c
@@ -30,19 +45,55 @@ services:
         condition: service_completed_successfully
       elasticsearch:
         condition: service_healthy
+      redis:
+        condition: service_started
     environment:
       - RAILS_ENV=production
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-please-set-secret-key-base}
       - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - REDIS_URL=redis://redis:6379/0
       - RAILS_LOG_LEVEL=${RAILS_LOG_LEVEL:-info}
       - PUBLIC_HOST=${PUBLIC_HOST:-localhost}
       - PUBLIC_SCHEME=${PUBLIC_SCHEME:-http}
       - WEB_PORT=${WEB_PORT:-3020}
+      - AI_IMPORT_ENABLED=${AI_IMPORT_ENABLED:-true}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - PARSER_SANDBOX_IMAGE=dynamic-mcp-parser-sandbox:latest
     volumes:
       - app_storage:/rails/storage
     ports:
       - "${WEB_PORT:-3020}:3000"
     command: ["./bin/rails", "server", "-b", "0.0.0.0", "-p", "3000"]
+
+  sidekiq:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      web_migrate:
+        condition: service_completed_successfully
+      elasticsearch:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      - RAILS_ENV=production
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-please-set-secret-key-base}
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - REDIS_URL=redis://redis:6379/0
+      - RAILS_LOG_LEVEL=${RAILS_LOG_LEVEL:-info}
+      - AI_IMPORT_ENABLED=${AI_IMPORT_ENABLED:-true}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - PARSER_SANDBOX_IMAGE=dynamic-mcp-parser-sandbox:latest
+      - BOOK_IMPORT_WORKDIR=/rails/tmp/book-import
+      - BOOK_IMPORT_HOST_WORKDIR=${BOOK_IMPORT_HOST_WORKDIR:-}
+    volumes:
+      - app_storage:/rails/storage
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${BOOK_IMPORT_HOST_WORKDIR:-./tmp/book-import}:/rails/tmp/book-import
+    user: root
+    command: ["bundle", "exec", "sidekiq", "-C", "config/sidekiq.yml"]
 
   # Elasticsearch: только внутри сети compose (http://elasticsearch:9200).
   # При смене major-версии: docker-compose down && docker volume rm dynamic-mcp_es_data
@@ -71,3 +122,4 @@ services:
 volumes:
   app_storage:
   es_data:
+  redis_data:

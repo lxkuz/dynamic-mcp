@@ -71,7 +71,9 @@ module Fb2
         depth: depth,
         position: position,
         path: path,
-        children: children
+        children: children,
+        page_start: nil,
+        page_end: nil
       )
     end
 

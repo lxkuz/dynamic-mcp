@@ -1,0 +1,41 @@
+{
+  "type": "object",
+  "required": ["title", "author"],
+  "anyOf": [
+    { "required": ["pages"] },
+    { "required": ["reading_text"] }
+  ],
+  "properties": {
+    "title": { "type": "string", "minLength": 1 },
+    "author": { "type": "string" },
+    "reading_text": { "type": "string" },
+    "pages": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "sections": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/section" }
+    }
+  },
+  "$defs": {
+    "section": {
+      "type": "object",
+      "required": ["title"],
+      "properties": {
+        "title": { "type": "string" },
+        "plain_text": { "type": "string" },
+        "depth": { "type": "integer", "minimum": 0 },
+        "position": { "type": "integer", "minimum": 0 },
+        "path": { "type": "string" },
+        "page_start": { "type": ["integer", "null"], "minimum": 1 },
+        "page_end": { "type": ["integer", "null"], "minimum": 1 },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/section" }
+        }
+      }
+    }
+  }
+}

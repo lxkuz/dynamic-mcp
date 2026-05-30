@@ -10,6 +10,8 @@ class Section < ApplicationRecord
       title: title,
       path: path,
       depth: depth,
+      page_start: page_start,
+      page_end: page_end,
       children: children.map(&:as_toc_node)
     }
   end

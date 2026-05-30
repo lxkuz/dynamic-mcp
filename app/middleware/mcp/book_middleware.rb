@@ -14,8 +14,7 @@ module Mcp
       match = request.path.match(MCP_PATH)
       return @app.call(env) unless match
 
-      uid = match[1]
-      book = Book.find_by(uid: uid)
+      book = Book.find_by(uid: match[1])
 
       unless book&.ready?
         return json_error(404, "Book not found or not ready")
@@ -37,7 +36,7 @@ module Mcp
 
       FastMcp.rack_middleware(
         fallback,
-        name: "dynamic-mcp-book-#{book.uid}",
+        name: Mcp::SERVER_NAME,
         version: "1.0.0",
         path_prefix: path_prefix,
         localhost_only: false,

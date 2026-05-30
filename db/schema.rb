@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_29_140000) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_29_210000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -37,6 +37,43 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_29_140000) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "book_import_events", force: :cascade do |t|
+    t.integer "book_import_id", null: false
+    t.datetime "created_at", null: false
+    t.float "duration_seconds"
+    t.integer "iteration", default: 0, null: false
+    t.text "message"
+    t.json "payload"
+    t.string "status", null: false
+    t.string "step", null: false
+    t.datetime "updated_at", null: false
+    t.index ["book_import_id", "created_at"], name: "index_book_import_events_on_book_import_id_and_created_at"
+    t.index ["book_import_id"], name: "index_book_import_events_on_book_import_id"
+  end
+
+  create_table "book_imports", force: :cascade do |t|
+    t.integer "book_id", null: false
+    t.datetime "created_at", null: false
+    t.text "error_message"
+    t.datetime "finished_at"
+    t.text "generated_script"
+    t.integer "iteration", default: 0, null: false
+    t.text "last_run_stderr"
+    t.text "last_run_stdout"
+    t.json "llm_usage", default: {}, null: false
+    t.string "mode", default: "ai", null: false
+    t.json "quality_report"
+    t.json "sampler_artifacts"
+    t.string "script_sha256"
+    t.datetime "started_at"
+    t.string "status", default: "queued", null: false
+    t.json "structure_analysis"
+    t.json "toc_discovery"
+    t.datetime "updated_at", null: false
+    t.json "validation_report"
+    t.index ["book_id"], name: "index_book_imports_on_book_id", unique: true
   end
 
   create_table "books", force: :cascade do |t|
@@ -67,10 +104,28 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_29_140000) do
     t.index ["book_id"], name: "index_pages_on_book_id"
   end
 
+  create_table "parser_script_samples", force: :cascade do |t|
+    t.integer "book_id"
+    t.integer "book_import_id"
+    t.datetime "created_at", null: false
+    t.integer "page_count"
+    t.text "script", null: false
+    t.string "script_sha256", null: false
+    t.integer "section_count"
+    t.string "source_format", null: false
+    t.datetime "updated_at", null: false
+    t.index ["book_id"], name: "index_parser_script_samples_on_book_id"
+    t.index ["book_import_id"], name: "index_parser_script_samples_on_book_import_id"
+    t.index ["source_format", "script_sha256"], name: "index_parser_script_samples_on_source_format_and_script_sha256", unique: true
+    t.index ["source_format", "updated_at"], name: "index_parser_script_samples_on_source_format_and_updated_at"
+  end
+
   create_table "sections", force: :cascade do |t|
     t.integer "book_id", null: false
     t.datetime "created_at", null: false
     t.integer "depth", default: 0, null: false
+    t.integer "page_end"
+    t.integer "page_start"
     t.integer "parent_id"
     t.string "path", default: "", null: false
     t.text "plain_text"
@@ -84,7 +139,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_29_140000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "book_import_events", "book_imports"
+  add_foreign_key "book_imports", "books"
   add_foreign_key "pages", "books"
+  add_foreign_key "parser_script_samples", "book_imports"
+  add_foreign_key "parser_script_samples", "books"
   add_foreign_key "sections", "books"
   add_foreign_key "sections", "sections", column: "parent_id"
 end

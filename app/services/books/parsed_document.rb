@@ -1,5 +1,4 @@
 module Books
-  ParsedSection = Data.define(:title, :plain_text, :depth, :position, :path, :children)
   ParsedDocument = Data.define(:title, :author, :sections, :reading_text, :pages)
 
   class TextPaginator

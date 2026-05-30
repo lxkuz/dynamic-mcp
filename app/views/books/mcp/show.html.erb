@@ -2,7 +2,7 @@
 
 <p class="meta">
   MCP встроен в веб-приложение — <strong>тот же хост и порт</strong>, что и сайт.
-  Каждая книга — свой endpoint по <code>uid</code>.
+  Каждая книга — свой endpoint по секретному <code>uid</code> (не угадывается перебором).
 </p>
 
 <dl class="meta">
@@ -16,7 +16,10 @@
   <p class="error">Книга ещё не готова (status: <%= @book.status %>).</p>
 <% else %>
   <h2>Подключение (SSE)</h2>
-  <p class="meta">Имя сервера: <code><%= @doc.server_name %></code></p>
+  <p class="meta">
+    Имя в протоколе MCP: <code><%= @doc.server_name %></code>.
+    В <code>mcp.json</code> ключ можно назвать коротко (например <code>dm</code>) — URL ниже с полным <code>uid</code>.
+  </p>
 
   <table>
     <tbody>

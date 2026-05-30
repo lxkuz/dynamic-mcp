@@ -83,3 +83,12 @@ git push origin main
 ```
 
 Логи: `./logs.sh -f sidekiq` · Рестарт: `./restart.sh`
+
+### HTTPS (nginx)
+
+```bash
+# BOOKWORM_LETSENCRYPT_EMAIL в .env, DNS A → сервер
+./script/setup-nginx-remote.sh
+```
+
+См. [docs/DEPLOY.md](docs/DEPLOY.md#nginx--https).

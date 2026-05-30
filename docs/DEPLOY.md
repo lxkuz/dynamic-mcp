@@ -74,7 +74,56 @@ docker-compose build parser_sandbox web sidekiq
 docker-compose up -d
 ```
 
-## Nginx
+## Nginx + HTTPS
+
+Скрипт добавляет **только** vhost `bookworm.breget.tech` — другие сайты (например `ftw.breget.tech`) не затрагиваются.
+
+**Перед запуском:** DNS A-запись `bookworm.breget.tech` → IP сервера, приложение слушает `WEB_PORT=3020`.
+
+В `.env` на сервере:
+
+```bash
+BOOKWORM_DOMAIN=bookworm.breget.tech
+BOOKWORM_LETSENCRYPT_EMAIL=your@email.com
+WEB_PORT=3020
+```
+
+С локальной машины (после `git push`):
+
+```bash
+./script/setup-nginx-remote.sh
+```
+
+Или на сервере:
+
+```bash
+cd ~/bookworm
+sudo ./script/setup-nginx.sh
+```
+
+После успеха обновите `~/bookworm/.env`:
+
+```bash
+PUBLIC_HOST=bookworm.breget.tech
+PUBLIC_SCHEME=https
+MCP_ALLOWED_ORIGINS=bookworm.breget.tech,localhost,127.0.0.1
+```
+
+И перезапустите web:
+
+```bash
+docker-compose up -d web
+```
+
+Проверка:
+
+```bash
+curl -sf https://bookworm.breget.tech/up
+```
+
+MCP: `https://bookworm.breget.tech/books/{uid}/mcp/sse`
+
+## Nginx (ручная настройка)
 
 ```nginx
 location / {

@@ -1,9 +1,18 @@
 #!/bin/bash
+#
+# Деплой dynamic-mcp на удалённый сервер.
+#   ./deploy.sh production
+#
+# Перед запуском: git push origin main
+# Локальный .env: DEPLOY_SERVER_PRODUCTION, DEPLOY_PATH_PRODUCTION, DEPLOY_GIT_SSH_KEY
+
+set -e
 
 cd "$(dirname "$0")"
 
 if [ -f .env ]; then
   set -a
+  # shellcheck source=/dev/null
   source .env
   set +a
 fi
@@ -11,12 +20,10 @@ fi
 # shellcheck source=scripts/deploy_resolve.sh
 source "$(dirname "$0")/scripts/deploy_resolve.sh"
 
-set -e
-
 TARGET="${1:-${DEPLOY_TARGET:-}}"
 if [ -z "$TARGET" ]; then
-  echo "❌ Укажите окружение первым аргументом или задайте DEPLOY_TARGET в .env"
-  echo "   Пример: ./deploy.sh production   или   ./deploy.sh staging"
+  echo "❌ Укажите окружение: ./deploy.sh production"
+  echo "   или задайте DEPLOY_TARGET в .env"
   exit 1
 fi
 
@@ -25,61 +32,63 @@ if ! resolve_deploy_target "$TARGET"; then
 fi
 
 echo "🌍 Окружение: $TARGET"
-echo "🌿 Ветка на сервере: ${DEPLOY_GIT_BRANCH}"
-echo "🚀 Деплой на сервер: $DEPLOY_SERVER"
-echo "📁 Рабочая директория: $DEPLOY_PATH"
-if [ -n "${CLEANUP_PATH:-}" ]; then
-  echo "🧹 CLEANUP_PATH (опционально): $CLEANUP_PATH"
+echo "🚀 Деплой на $DEPLOY_SERVER ($DEPLOY_PATH)"
+echo "🌿 Ветка: ${DEPLOY_GIT_BRANCH}"
+if [ -n "${DEPLOY_GIT_SSH_KEY:-}" ]; then
+  echo "🔑 Git SSH key (на сервере): $DEPLOY_GIT_SSH_KEY"
 fi
 echo ""
 
 SSH_OPTS="-o ServerAliveInterval=30 -o ServerAliveCountMax=20"
+COMPOSE_BASE="-f docker-compose.yml"
 
-COMPOSE_CMD=$(ssh $SSH_OPTS "$DEPLOY_SERVER" "if command -v docker-compose >/dev/null 2>&1; then echo docker-compose; else echo 'docker compose'; fi")
-echo "📌 Команда compose на сервере: $COMPOSE_CMD"
-echo ""
+COMPOSE_CMD=$(ssh $SSH_OPTS "$DEPLOY_SERVER" "command -v docker-compose >/dev/null 2>&1 && echo docker-compose || echo 'docker compose'")
+echo "📌 Compose на сервере: $COMPOSE_CMD $COMPOSE_BASE"
+echo "---"
 
-run_ssh_command() {
-  echo "➡️  Выполняю: $1"
-  ssh $SSH_OPTS "$DEPLOY_SERVER" "$1"
-  echo "✅ Команда выполнена успешно"
+run() {
+  echo "➡️  $1"
+  ssh $SSH_OPTS "$DEPLOY_SERVER" "cd $DEPLOY_PATH && $2"
+  echo "✅ OK"
   echo "---"
 }
 
-echo "📋 Шаг 1: Переход в рабочую директорию"
-run_ssh_command "cd $DEPLOY_PATH"
-
-echo "📦 Шаг 2: Обновление кода"
-run_ssh_command "cd $DEPLOY_PATH && git fetch origin && git checkout \"${DEPLOY_GIT_BRANCH}\" && git pull origin \"${DEPLOY_GIT_BRANCH}\""
-
-echo "⬇️  Шаг 3: Остановка контейнеров"
-run_ssh_command "cd $DEPLOY_PATH && $COMPOSE_CMD down"
-
-echo "🔨 Шаг 4: Пересборка образов"
-run_ssh_command "cd $DEPLOY_PATH && $COMPOSE_CMD build web web_migrate"
-
-echo "🔄 Шаг 5: Миграции"
-run_ssh_command "cd $DEPLOY_PATH && $COMPOSE_CMD run --rm web_migrate"
-
-echo "⬆️  Шаг 6: Запуск"
-set +e
-ssh $SSH_OPTS "$DEPLOY_SERVER" "cd $DEPLOY_PATH && $COMPOSE_CMD up -d --build"
-UP_EXIT=$?
-set -e
-if [ $UP_EXIT -ne 0 ]; then
-  echo "❌ Запуск не удался. Логи web_migrate:"
-  ssh $SSH_OPTS "$DEPLOY_SERVER" "cd $DEPLOY_PATH && $COMPOSE_CMD logs web_migrate"
-  exit 1
+GIT_CMD="git fetch origin && git checkout \"${DEPLOY_GIT_BRANCH}\" && git pull origin \"${DEPLOY_GIT_BRANCH}\""
+if [ -n "${DEPLOY_GIT_SSH_KEY:-}" ]; then
+  GIT_CMD="export GIT_SSH_COMMAND=\"ssh -i ${DEPLOY_GIT_SSH_KEY} -o IdentitiesOnly=yes -o StrictHostKeyChecking=no\" && ${GIT_CMD}"
 fi
-echo "✅ Контейнеры запущены"
+
+run "Проверка: нет docker-compose.override.yml" \
+  "test ! -f docker-compose.override.yml || (echo '❌ Удалите docker-compose.override.yml на сервере' && exit 1)"
+
+run "Обновление кода" "$GIT_CMD"
+run "Ревизия на сервере" "git rev-parse --short HEAD && git log -1 --oneline"
+
+run "Сборка parser_sandbox" "$COMPOSE_CMD $COMPOSE_BASE --profile build-only build parser_sandbox"
+run "Сборка web и sidekiq" "$COMPOSE_CMD $COMPOSE_BASE build web sidekiq"
+
+run "Остановка контейнеров" "$COMPOSE_CMD $COMPOSE_BASE down"
+
+run "Миграции (web_migrate)" "$COMPOSE_CMD $COMPOSE_BASE run --rm web_migrate"
+
+run "Запуск всех сервисов" "$COMPOSE_CMD $COMPOSE_BASE up -d"
+
+echo "⏳ Ожидание Elasticsearch..."
+ssh $SSH_OPTS "$DEPLOY_SERVER" "cd $DEPLOY_PATH && for i in \$(seq 1 60); do \
+  $COMPOSE_CMD $COMPOSE_BASE exec -T elasticsearch curl -sf 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s' >/dev/null && exit 0; \
+  sleep 2; \
+done; exit 1"
+echo "✅ Elasticsearch ready"
 echo "---"
 
-if ! ssh $SSH_OPTS "$DEPLOY_SERVER" "cd $DEPLOY_PATH && $COMPOSE_CMD ps web 2>/dev/null | grep -q 'Up\|running'"; then
-  echo "⚠️  Контейнер web не запущен. Логи:"
-  ssh $SSH_OPTS "$DEPLOY_SERVER" "cd $DEPLOY_PATH && $COMPOSE_CMD logs web --tail=80"
-  ssh $SSH_OPTS "$DEPLOY_SERVER" "cd $DEPLOY_PATH && $COMPOSE_CMD logs elasticsearch --tail=30"
-fi
+WEB_PORT_REMOTE="${WEB_PORT:-3020}"
+run "Healthcheck" "curl -sf http://127.0.0.1:${WEB_PORT_REMOTE}/up >/dev/null && echo 'GET /up → OK' || \
+  (echo 'GET /up failed' && $COMPOSE_CMD $COMPOSE_BASE logs --tail=40 web && exit 1)"
+
+echo "📊 Контейнеры:"
+ssh $SSH_OPTS "$DEPLOY_SERVER" "cd $DEPLOY_PATH && $COMPOSE_CMD $COMPOSE_BASE ps"
 
 echo ""
-echo "🎉 Деплой завершён"
-run_ssh_command "cd $DEPLOY_PATH && $COMPOSE_CMD ps"
+echo "🎉 Деплой завершён."
+echo "   Сайт: http://${DEPLOY_SERVER#*@}:${WEB_PORT_REMOTE}/"
+echo "   Логи: ./logs.sh $TARGET -f sidekiq"

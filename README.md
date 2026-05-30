@@ -1,6 +1,8 @@
 # dynamic-mcp
 
-REST API для FB2 и PDF: оглавление, страницы, полнотекстовый поиск (Elasticsearch). См. [docs/MVP.md](docs/MVP.md).
+REST API для FB2 и PDF: оглавление, страницы, полнотекстовый поиск (Elasticsearch).
+
+**Документация:** [docs/README.md](docs/README.md) — архитектура, AI-импорт, MCP, деплoy.
 
 **Запуск только через Docker Compose** — `web_migrate` + `web` + `sidekiq` + `redis` + `elasticsearch`.
 
@@ -59,7 +61,7 @@ AI_IMPORT_ENABLED=true
 DEEPSEEK_API_KEY=sk-...
 ```
 
-План и архитектура: [docs/AI_IMPORT_PLAN.md](docs/AI_IMPORT_PLAN.md)
+План и архитектура: [docs/AI_IMPORT.md](docs/AI_IMPORT.md) (операционная документация), [docs/AI_IMPORT_PLAN.md](docs/AI_IMPORT_PLAN.md) (исходный план)
 
 ## Команды
 
@@ -72,4 +74,14 @@ docker-compose down
 
 ## Деплой
 
-См. [DEPLOY_ENV.md](DEPLOY_ENV.md). С локальной машины: `./deploy.sh production` (после настройки `DEPLOY_*` в `.env`).
+См. [docs/DEPLOY.md](docs/DEPLOY.md). С локальной машины:
+
+```bash
+# 1. Настройте DEPLOY_* в .env (см. env.example)
+# 2. Запушьте код
+git push origin main
+# 3. Деплой
+./deploy.sh production
+```
+
+Логи: `./logs.sh production -f sidekiq` · Рестарт: `./restart.sh production`

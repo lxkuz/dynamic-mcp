@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-# Деплой dynamic-mcp на удалённый сервер.
-#   ./deploy.sh production
+# Деплой на демо-стенд.
+#   ./deploy.sh
 #
 # Перед запуском: git push origin main
-# Локальный .env: DEPLOY_SERVER_PRODUCTION, DEPLOY_PATH_PRODUCTION, DEPLOY_GIT_SSH_KEY
+# Локальный .env: DEPLOY_SERVER, DEPLOY_PATH, DEPLOY_GIT_SSH_KEY
 
 set -e
 
@@ -17,23 +17,19 @@ if [ -f .env ]; then
   set +a
 fi
 
-# shellcheck source=scripts/deploy_resolve.sh
-source "$(dirname "$0")/scripts/deploy_resolve.sh"
-
-TARGET="${1:-${DEPLOY_TARGET:-}}"
-if [ -z "$TARGET" ]; then
-  echo "❌ Укажите окружение: ./deploy.sh production"
-  echo "   или задайте DEPLOY_TARGET в .env"
+if [ -z "${DEPLOY_SERVER:-}" ]; then
+  echo "❌ Укажите DEPLOY_SERVER в .env"
   exit 1
 fi
 
-if ! resolve_deploy_target "$TARGET"; then
+if [ -z "${DEPLOY_PATH:-}" ]; then
+  echo "❌ Укажите DEPLOY_PATH в .env"
   exit 1
 fi
 
-echo "🌍 Окружение: $TARGET"
-echo "🚀 Деплой на $DEPLOY_SERVER ($DEPLOY_PATH)"
-echo "🌿 Ветка: ${DEPLOY_GIT_BRANCH}"
+DEPLOY_BRANCH="${DEPLOY_BRANCH:-main}"
+
+echo "🚀 Деплой на $DEPLOY_SERVER ($DEPLOY_PATH), ветка $DEPLOY_BRANCH"
 if [ -n "${DEPLOY_GIT_SSH_KEY:-}" ]; then
   echo "🔑 Git SSH key (на сервере): $DEPLOY_GIT_SSH_KEY"
 fi
@@ -53,7 +49,7 @@ run() {
   echo "---"
 }
 
-GIT_CMD="git fetch origin && git checkout \"${DEPLOY_GIT_BRANCH}\" && git pull origin \"${DEPLOY_GIT_BRANCH}\""
+GIT_CMD="git fetch origin && git checkout \"${DEPLOY_BRANCH}\" && git pull origin \"${DEPLOY_BRANCH}\""
 if [ -n "${DEPLOY_GIT_SSH_KEY:-}" ]; then
   GIT_CMD="export GIT_SSH_COMMAND=\"ssh -i ${DEPLOY_GIT_SSH_KEY} -o IdentitiesOnly=yes -o StrictHostKeyChecking=no\" && ${GIT_CMD}"
 fi
@@ -91,4 +87,4 @@ ssh $SSH_OPTS "$DEPLOY_SERVER" "cd $DEPLOY_PATH && $COMPOSE_CMD $COMPOSE_BASE ps
 echo ""
 echo "🎉 Деплой завершён."
 echo "   Сайт: http://${DEPLOY_SERVER#*@}:${WEB_PORT_REMOTE}/"
-echo "   Логи: ./logs.sh $TARGET -f sidekiq"
+echo "   Логи: ./logs.sh -f sidekiq"

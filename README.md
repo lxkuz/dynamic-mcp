@@ -72,16 +72,14 @@ docker-compose run --rm web_migrate
 docker-compose down
 ```
 
-## Деплой
+## Деплой (демо-стенд)
 
-См. [docs/DEPLOY.md](docs/DEPLOY.md). С локальной машины:
+См. [docs/DEPLOY.md](docs/DEPLOY.md):
 
 ```bash
-# 1. Настройте DEPLOY_* в .env (см. env.example)
-# 2. Запушьте код
+# DEPLOY_SERVER, DEPLOY_PATH, DEPLOY_GIT_SSH_KEY в .env
 git push origin main
-# 3. Деплой
-./deploy.sh production
+./deploy.sh
 ```
 
-Логи: `./logs.sh production -f sidekiq` · Рестарт: `./restart.sh production`
+Логи: `./logs.sh -f sidekiq` · Рестарт: `./restart.sh`

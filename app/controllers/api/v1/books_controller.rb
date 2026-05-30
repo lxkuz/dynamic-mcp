@@ -56,10 +56,7 @@ module Api
       end
 
       def mcp_sse_url_for(book)
-        host = ENV.fetch("PUBLIC_HOST", "localhost")
-        scheme = ENV.fetch("PUBLIC_SCHEME", "http")
-        web_port = ENV.fetch("WEB_PORT", "3020")
-        "#{scheme}://#{host}:#{web_port}/books/#{book.uid}/mcp/sse"
+        Books::PublicUrl.path("/books/#{book.uid}/mcp/sse")
       end
     end
   end

@@ -183,7 +183,6 @@ module Books
 
         @import.log_event!(step: "legacy_fallback", status: "started", message: "AI iterations exhausted")
         LegacyImporter.call(@book)
-        @import.update!(status: "legacy_fallback")
         @import.log_event!(step: "legacy_fallback", status: "ok")
         true
       end
@@ -280,17 +279,29 @@ module Books
       end
 
       def output_rules_for(structure)
-        [
+        format = (structure["detected_format"] || @book.source_format).to_s
+        rules = [
           "pages MUST be a JSON array of STRINGS — full text of each page, NOT objects",
           "Do NOT use content_preview or {page_number: ...} objects in pages",
           "sections may be empty array if unknown",
           "Use puts JSON.generate(...) not pretty_generate"
         ]
+        if format == "fb2"
+          rules.concat([
+            "FB2: require nokogiri — load with Nokogiri::XML(File.read(ARGV[0])); doc.remove_namespaces!",
+            "Do NOT use pdf-reader for FB2",
+            "Split book text into virtual pages (~1800 chars) or provide reading_text string",
+            "Build sections from //body/section with title, plain_text, depth, children",
+            "page_start/page_end optional for FB2 (omit or null)"
+          ])
+        end
+        rules
       end
 
       def canonical_snippet_for(structure)
         format = structure["detected_format"] || @book.source_format
         return CanonicalScriptTemplate.pdf_snippet if format.to_s == "pdf"
+        return CanonicalScriptTemplate.fb2_snippet if format.to_s == "fb2"
 
         nil
       end

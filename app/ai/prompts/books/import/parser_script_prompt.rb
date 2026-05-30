@@ -85,6 +85,46 @@ module Books
           Adapt for FB2/XML using nokogiri. Use input JSON fields: chapter_detection_strategy,
           toc_entries, build_toc_while_parsing, canonical_snippet, output_rules, reference_scripts.
 
+          ## Example Ruby script for FB2 (follow this pattern)
+
+          require 'json'
+          require 'nokogiri'
+
+          path = ARGV[0]
+          doc = Nokogiri::XML(File.read(path))
+          doc.remove_namespaces!
+
+          title = doc.at_xpath('//description/title-info/book-title')&.text.to_s.strip
+          author = doc.at_xpath('//description/title-info/author')&.text.to_s.strip
+
+          body = doc.xpath('//body').find { |b| b['name'].to_s.strip.empty? } || doc.at_xpath('//body')
+          paragraphs = body.xpath('.//p').map { |p| p.text.strip }.reject(&:empty?)
+          reading_text = paragraphs.join("\\n\\n")
+
+          CHARS = 1800
+          pages = []
+          paragraphs.each do |para|
+            if pages.empty? || pages.last.length + para.length + 2 > CHARS
+              pages << para
+            else
+              pages[-1] = pages.last + "\\n\\n" + para
+            end
+          end
+          pages = [reading_text] if pages.empty? && reading_text.present?
+
+          sections = body.xpath('./section').map.with_index do |sec, idx|
+            {
+              "title" => sec.at_xpath('./title')&.text.to_s.strip,
+              "plain_text" => sec.xpath('./p').map { |p| p.text.strip }.join("\\n\\n"),
+              "depth" => 0,
+              "position" => idx,
+              "path" => (idx + 1).to_s,
+              "children" => []
+            }
+          end
+
+          puts JSON.generate("title" => title, "author" => author, "pages" => pages, "sections" => sections)
+
           When reference_scripts is provided — proven working parsers for the same file format.
           Adapt the closest reference to current book structure (do not copy blindly).
 

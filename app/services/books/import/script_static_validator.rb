@@ -12,9 +12,11 @@ module Books
       ALLOWED_REQUIRES = %w[json pdf-reader nokogiri rexml].freeze
 
       FORBIDDEN_CONST = %w[
-        File FileUtils Dir IO Process Open3 Net::HTTP Net::HTTPS Socket TCPSocket
+        FileUtils Dir IO Process Open3 Net::HTTP Net::HTTPS Socket TCPSocket
         Kernel Binding ENV
       ].freeze
+
+      ALLOWED_FILE_METHODS = %w[read].freeze
 
       Result = Data.define(:safe, :violations) do
         def errors = violations
@@ -71,7 +73,15 @@ module Books
         end
 
         def on_send(node)
+          receiver = node.children[0]
           method = node.children[1].to_s
+
+          if file_receiver?(receiver)
+            unless ALLOWED_FILE_METHODS.include?(method)
+              @violations << "forbidden File method: #{method}"
+            end
+          end
+
           case method
           when "require"
             arg = string_argument(node.children[2])
@@ -82,6 +92,12 @@ module Books
             @violations << "forbidden method: #{method}"
           end
           super
+        end
+
+        def file_receiver?(node)
+          return false unless node
+
+          node.type == :const && const_name(node) == "File"
         end
 
         def string_argument(node)

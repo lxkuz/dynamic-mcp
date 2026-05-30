@@ -1,6 +1,6 @@
 # Переменные окружения и деплой
 
-> Полная документация: **[docs/DEPLOY.md](docs/DEPLOY.md)**
+> Шаблон: **[env.example](env.example)** · деплой: **[docs/DEPLOY.md](docs/DEPLOY.md)**
 
 ## Локально
 
@@ -12,12 +12,11 @@ docker-compose up -d
 
 ## Демо-стенд
 
-```bash
-# .env локально:
-# DEPLOY_SERVER=dockeruser@159.194.203.146
-# DEPLOY_PATH=/home/dockeruser/bookworm
-# DEPLOY_GIT_SSH_KEY=/home/dockeruser/.ssh/github_bookworm_deploy
+https://bookworm.breget.tech
 
+```bash
 git push origin main
 ./deploy.sh
 ```
+
+HTTPS (один раз): `./script/setup-nginx-remote.sh`

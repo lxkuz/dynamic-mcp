@@ -1,76 +1,63 @@
 # MCP (Model Context Protocol)
 
-Каждая **готовая** книга (`status: ready`) получает свой MCP endpoint на том же порту, что и сайт.
+Каждая книга (`status: ready`) получает свой MCP endpoint.
 
 ## URLs
 
-| URL | Назначение |
-|-----|------------|
-| `GET /books/:uid/mcp` | HTML-документация для агента |
-| `GET /books/:uid/mcp/sse` | SSE transport (Cursor, Claude Desktop, …) |
-| `POST /books/:uid/mcp/messages` | JSON-RPC |
+| | Локально | Демо-стенд |
+|--|----------|------------|
+| SSE | `http://localhost:3020/books/{uid}/mcp/sse` | `https://bookworm.breget.tech/books/{uid}/mcp/sse` |
+| Docs | `/books/{uid}/mcp` | то же на домене |
+| JSON-RPC | `POST /books/{uid}/mcp/messages` | то же |
 
-Пример локально:
-
-```
-http://localhost:3020/books/{uid}/mcp/sse
-```
-
-## Конфиг Cursor (`~/.cursor/mcp.json`)
+## Cursor (`~/.cursor/mcp.json`)
 
 ```json
 {
   "mcpServers": {
     "dm": {
-      "url": "http://localhost:3020/books/YOUR_BOOK_UID/mcp/sse"
+      "url": "https://bookworm.breget.tech/books/YOUR_BOOK_UID/mcp/sse"
     }
   }
 }
 ```
 
-После смены uid перезагрузите MCP в Settings → MCP → Reload.
+После смены `uid` или URL: Settings → MCP → Reload.
 
 ## Tools
 
 | Tool | Описание |
 |------|----------|
-| `book_info` | title, author, page_count, format, recommended_tools |
-| `list_toc` | Дерево оглавления (id, title, path, page_start/end) |
+| `book_info` | Метаданные, page_count, recommended_tools |
+| `list_toc` | Дерево оглавления |
 | `search_toc` | Поиск по заголовкам |
-| `get_page` | Текст одной страницы |
-| `get_pages` | Диапазон страниц (from, to, макс. 20) |
-| `get_section` | Полный текст секции по id из list_toc |
-| `search_fulltext` | Elasticsearch, параметр context_chars |
+| `get_page` | Текст страницы (`number`: 1..N) |
+| `get_pages` | Диапазон страниц (`from`, `to`, макс. 20) |
+| `get_section` | Текст секции по `id` из `list_toc` |
+| `search_fulltext` | Elasticsearch (`context_chars` опционально) |
 
-**Важно:** в ответах tools используется ключ `text`, не `content` (ограничение fast-mcp).
-
-## Nginx (production)
-
-Для SSE отключите буферизацию:
-
-```nginx
-location / {
-  proxy_pass http://127.0.0.1:3020;
-  proxy_http_version 1.1;
-  proxy_set_header Host $host;
-  proxy_set_header X-Forwarded-Proto $scheme;
-  proxy_set_header Connection "";
-  proxy_buffering off;
-  proxy_read_timeout 600s;
-}
-```
-
-## Реализация
-
-- `app/middleware/mcp/book_middleware.rb` — маршрутизация по uid
-- `app/services/mcp/tools.rb` — регистрация tools
-- `config/initializers/mcp.rb` — имя сервера, версия
-- `app/presenters/mcp/documentation_presenter.rb` — HTML docs
-
-MCP доступен только когда `book.ready?`.
+В ответах tools — ключ **`text`**, не `content`.
 
 ## Проверка
 
 ```bash
-ruby script/mcp_probe.rb http://localhost:3020/books/{uid}/mcp/sse
+curl https://bookworm.breget.tech/up
+ruby script/mcp_probe.rb https://bookworm.breget.tech/books/{uid}/mcp/sse
 ```
+
+## Nginx
+
+На демо-стенде vhost настроен скриптом `script/setup-nginx.sh`. Для SSE обязательно:
+
+- `proxy_buffering off`
+- `proxy_read_timeout 600s`
+
+Подробнее: [DEPLOY.md](DEPLOY.md)
+
+## Код
+
+- `app/middleware/mcp/book_middleware.rb`
+- `app/services/mcp/tools.rb`
+- `config/initializers/mcp.rb`
+
+MCP доступен только при `book.ready?`.

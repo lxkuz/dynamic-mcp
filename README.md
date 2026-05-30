@@ -1,16 +1,19 @@
 # dynamic-mcp
 
-REST API для FB2 и PDF: оглавление, страницы, полнотекстовый поиск (Elasticsearch).
+REST API для FB2 и PDF: оглавление, страницы, полнотекстовый поиск (Elasticsearch). Каждая книга — свой **MCP** endpoint для AI-агентов.
 
-**Документация:** [docs/README.md](docs/README.md) — архитектура, AI-импорт, MCP, деплoy.
+**Демо-стенд:** https://bookworm.breget.tech
+
+**Документация:** [docs/README.md](docs/README.md)
 
 **Запуск только через Docker Compose** — `web_migrate` + `web` + `sidekiq` + `redis` + `elasticsearch`.
 
-## Быстрый старт
+## Быстрый старт (локально)
 
 ```bash
 cp env.example .env
-# SECRET_KEY_BASE=$(bin/rails secret)  — или сгенерируйте один раз локально
+# отредактируйте .env — см. комментарии в env.example
+# SECRET_KEY_BASE=$(bin/rails secret)
 
 docker-compose build parser_sandbox web sidekiq
 docker-compose up -d
@@ -22,46 +25,61 @@ docker-compose up -d
 
 После загрузки импорт идёт **в фоне (Sidekiq)**. Страница `/uploads/{uid}` показывает прогресс.
 
-- REST API по `uid` книги
-- **MCP SSE:** `http://localhost:3020/books/{uid}/mcp/sse` (тот же порт, что и сайт)
-- **MCP docs:** `http://localhost:3020/books/{uid}/mcp`
+| | Локально | Демо-стенд |
+|--|----------|------------|
+| Сайт | http://localhost:3020 | https://bookworm.breget.tech |
+| MCP SSE | `http://localhost:3020/books/{uid}/mcp/sse` | `https://bookworm.breget.tech/books/{uid}/mcp/sse` |
+| MCP docs | `/books/{uid}/mcp` | то же на домене |
 
 ```bash
 curl http://localhost:3020/up
-curl -F "file=@spec/fixtures/sample.fb2" http://localhost:3020/api/v1/books
-# в ответе возьмите uid, затем:
+curl -F "file=@book.pdf" http://localhost:3020/api/v1/books
 curl http://localhost:3020/api/v1/books/{uid}/toc
-curl "http://localhost:3020/api/v1/books/{uid}/search?q=elasticsearch"
-curl http://localhost:3020/books/{uid}/mcp
+curl "http://localhost:3020/api/v1/books/{uid}/search?q=буровой"
 ```
+
+## Cursor MCP
+
+В `~/.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "dm": {
+      "url": "https://bookworm.breget.tech/books/{uid}/mcp/sse"
+    }
+  }
+}
+```
+
+Подробнее: [docs/MCP.md](docs/MCP.md)
 
 ## API
 
 | Метод | Путь |
 |-------|------|
-| POST | `/api/v1/books` — загрузка файла книги (любой формат при AI-импорте) |
+| POST | `/api/v1/books` — загрузка файла |
 | GET | `/api/v1/books/:uid` |
-| GET | `/books/:uid/mcp` — документация MCP для агента |
+| GET | `/books/:uid/mcp` — документация MCP |
 | GET | `/api/v1/books/:uid/toc` |
-| GET | `/api/v1/books/:uid/toc/search?q=` |
 | GET | `/api/v1/books/:uid/pages/:number` |
-| GET | `/api/v1/books/:uid/pages?from=1&to=3` — диапазон страниц |
-| GET | `/api/v1/books/:uid/sections/:id` — секция оглавления |
-| GET | `/api/v1/books/:uid/search?q=` (`context_chars` опционально) |
-
+| GET | `/api/v1/books/:uid/pages?from=1&to=3` |
+| GET | `/api/v1/books/:uid/sections/:id` |
+| GET | `/api/v1/books/:uid/search?q=` |
 | GET | `/uploads/:uid/status` — JSON статус импорта |
+
+Полный список: [docs/API.md](docs/API.md)
 
 ## AI-импорт (DeepSeek + ActiveHarness)
 
-По умолчанию без `DEEPSEEK_API_KEY` используется **legacy**-парсер (`Fb2`/`Pdf`).
+Без `DEEPSEEK_API_KEY` используется **legacy**-парсер (`Fb2`/`Pdf`).
 
 ```bash
-# .env
 AI_IMPORT_ENABLED=true
 DEEPSEEK_API_KEY=sk-...
 ```
 
-План и архитектура: [docs/AI_IMPORT.md](docs/AI_IMPORT.md) (операционная документация), [docs/AI_IMPORT_PLAN.md](docs/AI_IMPORT_PLAN.md) (исходный план)
+Документация: [docs/AI_IMPORT.md](docs/AI_IMPORT.md)
 
 ## Команды
 
@@ -72,23 +90,16 @@ docker-compose run --rm web_migrate
 docker-compose down
 ```
 
-## Деплой (демо-стенд)
+## Демо-стенд: деплой и HTTPS
 
-См. [docs/DEPLOY.md](docs/DEPLOY.md):
+Шаблон переменных: **`env.example`** (локальный `.env` и отличия для сервера).
 
 ```bash
-# DEPLOY_SERVER, DEPLOY_PATH, DEPLOY_GIT_SSH_KEY в .env
 git push origin main
 ./deploy.sh
+./script/setup-nginx-remote.sh   # один раз, нужен sudo на сервере
 ```
 
 Логи: `./logs.sh -f sidekiq` · Рестарт: `./restart.sh`
 
-### HTTPS (nginx)
-
-```bash
-# BOOKWORM_LETSENCRYPT_EMAIL в .env, DNS A → сервер
-./script/setup-nginx-remote.sh
-```
-
-См. [docs/DEPLOY.md](docs/DEPLOY.md#nginx--https).
+Подробнее: [docs/DEPLOY.md](docs/DEPLOY.md)

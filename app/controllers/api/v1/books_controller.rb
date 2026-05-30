@@ -56,7 +56,7 @@ module Api
       end
 
       def mcp_sse_url_for(book)
-        Books::PublicUrl.path("/books/#{book.uid}/mcp/sse")
+        ::Books::PublicUrl.path("/books/#{book.uid}/mcp/sse")
       end
     end
   end

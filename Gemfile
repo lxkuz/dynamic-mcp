@@ -32,7 +32,7 @@ gem "thruster", require: false
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 gem "image_processing", "~> 1.2"
 
-gem "elasticsearch", "~> 8.15"
+gem "elasticsearch", "~> 9.4"
 gem "fast-mcp", "~> 1.6"
 gem "nokogiri", "~> 1.18"
 gem "pdf-reader", "~> 2.14"

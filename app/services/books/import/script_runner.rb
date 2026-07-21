@@ -10,7 +10,8 @@ module Books
       MAX_STDOUT_BYTES = 50.megabytes
       WORK_ROOT = ENV.fetch("BOOK_IMPORT_WORKDIR", Rails.root.join("tmp", "book-import").to_s).freeze
       HOST_WORK_ROOT = ENV.fetch("BOOK_IMPORT_HOST_WORKDIR", WORK_ROOT).freeze
-      DOCKER_ERROR_PATTERN = /permission denied|cannot connect to the Docker daemon|docker not available/i
+      # Match Docker infrastructure failures only — not Ruby Errno::EACCES inside the sandbox.
+      DOCKER_ERROR_PATTERN = /cannot connect to the Docker daemon|docker not available|permission denied while trying to connect to the Docker daemon/i
 
       def self.call(script_source:, source_path:, source_format:, book_import:)
         new(script_source, source_path, source_format, book_import).call
@@ -32,6 +33,8 @@ module Books
 
           File.write(script_path, @script_source)
           FileUtils.cp(@source_path, input_path)
+          # Sandbox runs as nobody — ActiveStorage blobs are often 0600.
+          File.chmod(0o644, script_path, input_path)
 
           result = run_docker(script_path, input_path)
           if result.success? || !docker_fallback?(result)

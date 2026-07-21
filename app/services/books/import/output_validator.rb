@@ -68,19 +68,18 @@ module Books
 
         errors << "pages and reading_text are both empty" if pages.empty? && reading.blank?
         errors << "title is blank" if @json["title"].to_s.strip.blank?
-
-        if @expected_page_count && pages.any? && pages.length != @expected_page_count
-          warnings << "page count #{pages.length} != expected #{@expected_page_count}"
-        end
-
         errors << "all pages are empty" if pages.any? && stats[:empty_pages] == pages.length
         errors
       end
 
       def business_warnings(stats)
         warnings = []
+        pages = normalize_page_texts(@json["pages"] || [])
         warnings << "no sections in output" if stats[:section_count].zero?
         warnings << "many empty pages (#{stats[:empty_pages]})" if stats[:empty_pages].to_i > 3
+        if @expected_page_count && pages.any? && pages.length != @expected_page_count
+          warnings << "page count #{pages.length} != expected #{@expected_page_count}"
+        end
         warnings
       end
 

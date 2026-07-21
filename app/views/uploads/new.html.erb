@@ -1,14 +1,29 @@
-<h1>Загрузка книги</h1>
-<p class="meta">
-  Любой формат файла (PDF, FB2, EPUB, TXT, DOCX и др.).
-  Импорт выполняет AI-агент; для FB2/PDF без DeepSeek используется legacy-парсер.
-</p>
+<div class="page-header">
+  <div>
+    <div class="page-header__eyebrow">dynamic-mcp</div>
+    <h1>Загрузка книги</h1>
+    <p class="page-header__lead">
+      Любой формат файла (PDF, FB2, EPUB, TXT, DOCX и др.).
+      Импорт выполняет AI-агент; для FB2/PDF без DeepSeek используется legacy-парсер.
+    </p>
+  </div>
+  <span class="badge">import</span>
+</div>
 
 <% if @error.present? %>
-  <p class="error"><%= @error %></p>
+  <div class="error"><%= @error %></div>
 <% end %>
 
-<%= form_with url: upload_path, method: :post, multipart: true do %>
-  <%= file_field_tag :file, required: true %>
-  <%= submit_tag "Загрузить" %>
-<% end %>
+<section class="card">
+  <div class="card__header">
+    <div>
+      <h2 class="card__title" style="margin:0">Файл книги</h2>
+      <p class="card__subtitle">Выберите файл — дальше AI построит парсер и MCP endpoint</p>
+    </div>
+  </div>
+
+  <%= form_with url: upload_path, method: :post, multipart: true do %>
+    <%= file_field_tag :file, required: true %>
+    <%= button_tag "Загрузить", type: :submit, class: "btn" %>
+  <% end %>
+</section>

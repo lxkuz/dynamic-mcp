@@ -1,83 +1,123 @@
-<h1>MCP — <%= @book.title %></h1>
+<div class="page-header">
+  <div>
+    <div class="page-header__eyebrow">MCP endpoint</div>
+    <h1><%= @book.title %></h1>
+    <p class="page-header__lead">
+      MCP встроен в веб-приложение — <strong>тот же хост и порт</strong>, что и сайт.
+      Каждая книга — свой endpoint по секретному <code>uid</code>.
+    </p>
+  </div>
+  <span class="badge<%= " badge--ok" if @book.ready? %>"><%= @book.ready? ? "ready" : @book.status %></span>
+</div>
 
-<p class="meta">
-  MCP встроен в веб-приложение — <strong>тот же хост и порт</strong>, что и сайт.
-  Каждая книга — свой endpoint по секретному <code>uid</code> (не угадывается перебором).
-</p>
-
-<dl class="meta">
-  <dt>UID книги</dt>
-  <dd><code><%= @book.uid %></code></dd>
-  <dt>Название</dt><dd><%= @book.title %></dd>
-  <dt>Автор</dt><dd><%= @book.author.presence || "—" %></dd>
-</dl>
+<section class="card">
+  <div class="card__header">
+    <div>
+      <h2 class="card__title" style="margin:0">Книга</h2>
+      <p class="card__subtitle">Метаданные и идентификатор для агентов</p>
+    </div>
+  </div>
+  <dl class="meta">
+    <dt>UID книги</dt>
+    <dd><code><%= @book.uid %></code></dd>
+    <dt>Название</dt><dd><%= @book.title %></dd>
+    <dt>Автор</dt><dd><%= @book.author.presence || "—" %></dd>
+  </dl>
+</section>
 
 <% unless @book.ready? %>
-  <p class="error">Книга ещё не готова (status: <%= @book.status %>).</p>
+  <div class="error">Книга ещё не готова (status: <%= @book.status %>).</div>
 <% else %>
-  <h2>Подключение (SSE)</h2>
-  <p class="meta">
-    Имя в протоколе MCP: <code><%= @doc.server_name %></code>.
-    В <code>mcp.json</code> ключ можно назвать коротко (например <code>dm</code>) — URL ниже с полным <code>uid</code>.
-  </p>
+  <section class="card card--solid">
+    <div class="card__header">
+      <div>
+        <h2 class="card__title" style="margin:0">Подключение (SSE)</h2>
+        <p class="card__subtitle">
+          Имя в протоколе MCP: <code><%= @doc.server_name %></code>.
+          В <code>mcp.json</code> ключ можно назвать коротко (например <code>dm</code>).
+        </p>
+      </div>
+    </div>
+    <table>
+      <tbody>
+        <tr>
+          <th>SSE</th>
+          <td><code><%= @doc.sse_url %></code></td>
+        </tr>
+        <tr>
+          <th>Messages</th>
+          <td><code><%= @doc.messages_url %></code></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
 
-  <table>
-    <tbody>
-      <tr>
-        <th>SSE</th>
-        <td><code><%= @doc.sse_url %></code></td>
-      </tr>
-      <tr>
-        <th>Messages</th>
-        <td><code><%= @doc.messages_url %></code></td>
-      </tr>
-    </tbody>
-  </table>
+  <section class="card card--dark">
+    <div class="card__header">
+      <div>
+        <h2 class="card__title" style="margin:0;color:#94a3b8">Cursor / Claude Desktop</h2>
+        <p class="card__subtitle" style="color:#cbd5e1">Добавьте в <code>~/.cursor/mcp.json</code></p>
+      </div>
+      <span class="badge badge--soft">config</span>
+    </div>
+    <pre><code><%= @doc.cursor_config_json %></code></pre>
+  </section>
 
-  <h2>Cursor / Claude Desktop</h2>
-  <p class="meta">Добавьте в <code>~/.cursor/mcp.json</code>:</p>
-  <pre><code><%= @doc.cursor_config_json %></code></pre>
+  <section class="card card--solid">
+    <div class="card__header">
+      <div>
+        <h2 class="card__title" style="margin:0">Tools</h2>
+        <p class="card__subtitle">Инструменты, доступные ИИ-агенту через MCP</p>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Tool</th>
+          <th>Описание</th>
+          <th>Аргументы</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @doc.tools.each do |tool| %>
+          <tr>
+            <td><code><%= tool.name %></code></td>
+            <td><%= tool.description %></td>
+            <td><code><%= tool.arguments %></code></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </section>
+<% end %>
 
-  <h2>Tools</h2>
+<section class="card card--solid">
+  <div class="card__header">
+    <div>
+      <h2 class="card__title" style="margin:0">REST API</h2>
+      <p class="card__subtitle">Базовый URL: <code><%= request.base_url %></code></p>
+    </div>
+  </div>
   <table>
     <thead>
       <tr>
-        <th>Tool</th>
+        <th>Метод</th>
+        <th>URL</th>
         <th>Описание</th>
-        <th>Аргументы</th>
       </tr>
     </thead>
     <tbody>
-      <% @doc.tools.each do |tool| %>
+      <% @api_endpoints.each do |ep| %>
         <tr>
-          <td><code><%= tool.name %></code></td>
-          <td><%= tool.description %></td>
-          <td><code><%= tool.arguments %></code></td>
+          <td><strong><%= ep.method %></strong></td>
+          <td><code><%= ep.path %></code></td>
+          <td><%= ep.description %></td>
         </tr>
       <% end %>
     </tbody>
   </table>
-<% end %>
+</section>
 
-<h2>REST API (та же книга)</h2>
-<p class="meta">Базовый URL: <code><%= request.base_url %></code></p>
-<table>
-  <thead>
-    <tr>
-      <th>Метод</th>
-      <th>URL</th>
-      <th>Описание</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @api_endpoints.each do |ep| %>
-      <tr>
-        <td><strong><%= ep.method %></strong></td>
-        <td><code><%= ep.path %></code></td>
-        <td><%= ep.description %></td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
-
-<p><%= link_to "← Загрузить другую книгу", root_path %></p>
+<div class="page-footer">
+  <%= link_to "← Загрузить другую книгу", root_path, class: "btn btn--ghost" %>
+</div>

@@ -1,10 +1,19 @@
-<h1>Импорт книги</h1>
+<div class="page-header">
+  <div>
+    <div class="page-header__eyebrow">dynamic-mcp</div>
+    <h1>Импорт книги</h1>
+    <p class="page-header__lead">AI строит парсер, прогоняет sandbox и готовит MCP endpoint</p>
+  </div>
+  <span class="badge<%= " badge--ok" if @book.ready? %>"><%= @book.ready? ? "ready" : (@book_import&.mode || "ai") %></span>
+</div>
 
-<dl class="meta book-meta">
-  <dt>UID</dt><dd><code><%= @book.uid %></code></dd>
-  <dt>Формат</dt><dd><%= @book.source_format.upcase %></dd>
-  <dt>Режим</dt><dd><%= @book_import&.mode || "—" %></dd>
-</dl>
+<section class="card card--solid" style="padding:0.85rem;margin-bottom:1rem">
+  <dl class="meta book-meta" style="margin:0;border:none;background:transparent;padding:0">
+    <dt>UID</dt><dd><code><%= @book.uid %></code></dd>
+    <dt>Формат</dt><dd><%= @book.source_format.upcase %></dd>
+    <dt>Режим</dt><dd><%= @book_import&.mode || "—" %></dd>
+  </dl>
+</section>
 
 <div id="import-error" class="import-error" style="<%= @book.error_message.present? ? "" : "display:none" %>">
   <%= @book.error_message %>
@@ -90,50 +99,71 @@
 
 <% if @book.ready? %>
 <div id="book-ready">
-  <dl class="meta">
-    <dt>Название</dt><dd id="book-title"><%= @book.title %></dd>
-    <dt>Автор</dt><dd id="book-author"><%= @book.author.presence || "—" %></dd>
-    <dt>Страниц</dt><dd id="book-pages"><%= @book.page_count %></dd>
-  </dl>
+  <section class="card">
+    <div class="card__header">
+      <div>
+        <h2 class="card__title" style="margin:0">Книга готова</h2>
+        <p class="card__subtitle">Метаданные после успешного импорта</p>
+      </div>
+      <span class="badge badge--ok">ready</span>
+    </div>
+    <dl class="meta">
+      <dt>Название</dt><dd id="book-title"><%= @book.title %></dd>
+      <dt>Автор</dt><dd id="book-author"><%= @book.author.presence || "—" %></dd>
+      <dt>Страниц</dt><dd id="book-pages"><%= @book.page_count %></dd>
+    </dl>
+  </section>
 
-  <h2>MCP для ИИ-агента</h2>
-  <p>
-    <%= link_to "Документация MCP →", book_mcp_path(@book.uid) %>
-  </p>
-  <p class="meta"><code><%= @mcp_doc_url %></code></p>
+  <section class="card card--solid">
+    <div class="card__header">
+      <div>
+        <h2 class="card__title" style="margin:0">MCP для ИИ-агента</h2>
+        <p class="card__subtitle">Документация и конфиг подключения</p>
+      </div>
+      <%= link_to "Документация MCP →", book_mcp_path(@book.uid), class: "btn" %>
+    </div>
+    <div class="url-chip"><%= @mcp_doc_url %></div>
+  </section>
 
-  <h2>REST API</h2>
-  <p class="meta">Базовый URL: <code><%= request.base_url %></code></p>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Метод</th>
-        <th>URL</th>
-        <th>Описание</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @endpoints.each do |ep| %>
+  <section class="card card--solid">
+    <div class="card__header">
+      <div>
+        <h2 class="card__title" style="margin:0">REST API</h2>
+        <p class="card__subtitle">Базовый URL: <code><%= request.base_url %></code></p>
+      </div>
+    </div>
+    <table>
+      <thead>
         <tr>
-          <td><strong><%= ep.method %></strong></td>
-          <td>
-            <code><%= ep.path %></code>
-            <% if ep.example.present? && ep.example != ep.path %>
-              <div class="example">Пример: <code><%= ep.example %></code></div>
-            <% end %>
-          </td>
-          <td><%= ep.description %></td>
+          <th>Метод</th>
+          <th>URL</th>
+          <th>Описание</th>
         </tr>
-      <% end %>
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        <% @endpoints.each do |ep| %>
+          <tr>
+            <td><strong><%= ep.method %></strong></td>
+            <td>
+              <code><%= ep.path %></code>
+              <% if ep.example.present? && ep.example != ep.path %>
+                <div class="example">Пример: <code><%= ep.example %></code></div>
+              <% end %>
+            </td>
+            <td><%= ep.description %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </section>
 </div>
 <% else %>
 <div id="book-ready" style="display:none"></div>
 <% end %>
 
-<p><%= link_to "Загрузить другую книгу", root_path %></p>
+<div class="page-footer">
+  <%= link_to "Загрузить другую книгу", root_path, class: "btn btn--ghost" %>
+</div>
 
 <style>
   .import-dashboard.is-failed {

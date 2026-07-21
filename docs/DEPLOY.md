@@ -1,9 +1,8 @@
 # Деплой
 
-**Демо-стенд:** https://bookworm.breget.tech  
-**SSH:** `dockeruser@159.194.203.146` · **каталог:** `~/bookworm`
+**Демо-стенд:** https://bookworm.breget.tech
 
-Шаблон переменных: [env.example](../env.example) — локальный `.env` и блок «Сервер» для `~/bookworm/.env`.
+Шаблон переменных: [env.example](../env.example) — локальный `.env` и блок «Сервер» для `~/bookworm/.env` на вашей машине.
 
 ## Быстрый цикл
 
@@ -16,18 +15,18 @@ git push origin main
 ## Локальный `.env` для deploy
 
 ```bash
-DEPLOY_SERVER=dockeruser@159.194.203.146
-DEPLOY_PATH=/home/dockeruser/bookworm
+DEPLOY_SERVER=deploy@your-server.example
+DEPLOY_PATH=/home/deploy/bookworm
 DEPLOY_BRANCH=main
-DEPLOY_GIT_SSH_KEY=/home/dockeruser/.ssh/github_bookworm_deploy
+DEPLOY_GIT_SSH_KEY=/home/deploy/.ssh/github_deploy
 
-BOOKWORM_DOMAIN=bookworm.breget.tech
+BOOKWORM_DOMAIN=bookworm.example.com
 BOOKWORM_LETSENCRYPT_EMAIL=your@email.com
 ```
 
 ## Что делает `deploy.sh`
 
-1. `git pull` на сервере (ключ `github_bookworm_deploy`)
+1. `git pull` на сервере (ключ из `DEPLOY_GIT_SSH_KEY`)
 2. `docker compose build` — parser_sandbox, web, sidekiq
 3. `down` → `web_migrate` → `up -d`
 4. ожидание Elasticsearch → `GET /up`
@@ -38,17 +37,17 @@ BOOKWORM_LETSENCRYPT_EMAIL=your@email.com
 |------------|--------|
 | `SECRET_KEY_BASE` | `openssl rand -hex 64` |
 | `WEB_PORT` | `3020` |
-| `PUBLIC_HOST` | `bookworm.breget.tech` |
+| `PUBLIC_HOST` | `bookworm.example.com` |
 | `PUBLIC_SCHEME` | `https` |
 | `DEEPSEEK_API_KEY` | для AI-импорта |
-| `BOOK_IMPORT_HOST_WORKDIR` | `/home/dockeruser/bookworm/tmp/book-import` |
-| `MCP_ALLOWED_ORIGINS` | `bookworm.breget.tech,localhost,127.0.0.1` |
+| `BOOK_IMPORT_HOST_WORKDIR` | `/home/deploy/bookworm/tmp/book-import` |
+| `MCP_ALLOWED_ORIGINS` | `bookworm.example.com,localhost,127.0.0.1` |
 
 `DEPLOY_*` на сервере не нужны.
 
 ## HTTPS (nginx + Let's Encrypt)
 
-Скрипт создаёт **только** `/etc/nginx/sites-available/bookworm.breget.tech.conf` — другие vhost (`ftw.breget.tech`, `psychologist.breget.tech`) не трогает.
+Скрипт создаёт **только** vhost для `BOOKWORM_DOMAIN` — существующие сайты на сервере не трогает.
 
 ```bash
 ./script/setup-nginx-remote.sh
@@ -58,7 +57,7 @@ BOOKWORM_LETSENCRYPT_EMAIL=your@email.com
 После nginx:
 
 ```bash
-curl https://bookworm.breget.tech/up
+curl https://bookworm.example.com/up
 docker compose up -d web   # на сервере, если меняли PUBLIC_*
 ```
 

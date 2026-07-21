@@ -31,7 +31,12 @@ if [ -n "${DEPLOY_GIT_SSH_KEY:-}" ]; then
   GIT_CMD="export GIT_SSH_COMMAND=\"ssh -i ${DEPLOY_GIT_SSH_KEY} -o IdentitiesOnly=yes -o StrictHostKeyChecking=no\" && ${GIT_CMD}"
 fi
 
-echo "Nginx + SSL для ${BOOKWORM_DOMAIN:-bookworm.breget.tech}"
+if [ -z "${BOOKWORM_DOMAIN:-}" ]; then
+  echo "Укажите BOOKWORM_DOMAIN в .env"
+  exit 1
+fi
+
+echo "Nginx + SSL для ${BOOKWORM_DOMAIN}"
 echo "Сервер: $DEPLOY_SERVER:$DEPLOY_PATH"
 echo "(потребуется sudo-пароль на сервере)"
 echo ""

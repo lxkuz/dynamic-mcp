@@ -17,7 +17,11 @@ if [ -f ".env" ]; then
   set +a
 fi
 
-DEPLOY_GIT_SSH_KEY="${DEPLOY_GIT_SSH_KEY:-$HOME/.ssh/github_bookworm_deploy}"
+if [ -z "${DEPLOY_GIT_SSH_KEY:-}" ]; then
+  echo "❌ Укажите DEPLOY_GIT_SSH_KEY в .env"
+  exit 1
+fi
+
 BRANCH="${DEPLOY_BRANCH:-main}"
 
 if [ ! -f "$DEPLOY_GIT_SSH_KEY" ]; then

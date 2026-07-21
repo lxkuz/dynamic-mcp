@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Добавление bookworm.breget.tech в nginx + Let's Encrypt SSL.
+# Добавление vhost (BOOKWORM_DOMAIN) в nginx + Let's Encrypt SSL.
 # Только новый vhost — существующие сайты не трогает.
 #
 # На сервере:
@@ -10,8 +10,8 @@
 #   ./script/setup-nginx-remote.sh
 #
 # Переменные из .env:
-#   BOOKWORM_DOMAIN          — bookworm.breget.tech
-#   WEB_PORT                 — 3020
+#   BOOKWORM_DOMAIN            — обязателен
+#   WEB_PORT                   — 3020
 #   BOOKWORM_LETSENCRYPT_EMAIL — email для Let's Encrypt
 #
 # Нужны: nginx, certbot (или Docker certbot/certbot), DNS A → сервер.
@@ -28,7 +28,11 @@ if [ -f "$PROJECT_ROOT/.env" ]; then
   set +a
 fi
 
-BOOKWORM_DOMAIN="${BOOKWORM_DOMAIN:-bookworm.breget.tech}"
+if [ -z "${BOOKWORM_DOMAIN:-}" ]; then
+  echo "❌ Укажите BOOKWORM_DOMAIN в .env"
+  exit 1
+fi
+
 WEB_PORT="${WEB_PORT:-3020}"
 BOOKWORM_LETSENCRYPT_EMAIL="${BOOKWORM_LETSENCRYPT_EMAIL:-${LETSENCRYPT_EMAIL:-}}"
 

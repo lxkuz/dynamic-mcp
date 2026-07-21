@@ -7,7 +7,6 @@
 | | |
 |--|--|
 | URL | https://bookworm.breget.tech |
-| Сервер | `dockeruser@159.194.203.146`, каталог `~/bookworm` |
 | MCP | `https://bookworm.breget.tech/books/{uid}/mcp/sse` |
 
 ## С чего начать

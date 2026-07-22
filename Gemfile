@@ -34,7 +34,7 @@ gem "image_processing", "~> 1.2"
 
 gem "elasticsearch", "~> 8.15"
 gem "fast-mcp", "~> 1.6"
-gem "nokogiri", "~> 1.18"
+gem "nokogiri", "~> 1.19"
 gem "pdf-reader", "~> 2.14"
 gem "rubyzip", "~> 2.3"
 gem "rack-cors"

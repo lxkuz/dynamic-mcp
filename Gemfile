@@ -36,6 +36,7 @@ gem "elasticsearch", "~> 8.15"
 gem "fast-mcp", "~> 1.6"
 gem "nokogiri", "~> 1.18"
 gem "pdf-reader", "~> 2.14"
+gem "rubyzip", "~> 2.3"
 gem "rack-cors"
 
 gem "active_harness"

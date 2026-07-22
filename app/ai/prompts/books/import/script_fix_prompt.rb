@@ -31,7 +31,7 @@ module Books
           Your script must output:
           puts JSON.generate("title" => ..., "author" => ..., "pages" => [...strings...], "sections" => [...])
 
-          Allowed requires: json, pdf-reader, nokogiri, rexml only. No raise, no shell.
+          Allowed requires: json, pdf-reader, nokogiri, rexml, zip, zlib only. No raise, no shell.
 
           Reply ONLY with the complete fixed Ruby script (no markdown fences).
         PROMPT

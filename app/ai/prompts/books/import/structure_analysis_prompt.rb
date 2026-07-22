@@ -62,6 +62,24 @@ module Books
             "suggested_gems": ["nokogiri", "json"],
             "confidence": 0.85
           }
+
+          ## Example D — EPUB
+
+          {
+            "detected_format": "epub",
+            "title": "Sample EPUB",
+            "author": "Author",
+            "toc_found": false,
+            "has_structured_toc": false,
+            "pagination_mode": "virtual",
+            "toc_entries": [],
+            "chapter_detection_strategy": "spine",
+            "build_toc_while_parsing": true,
+            "sample_chapter": {"page_from": null, "page_to": null, "title": "Chapter 1"},
+            "parser_notes": "EPUB is ZIP: require zip + nokogiri; open with Zip::File; read OPF spine XHTML; virtual pages ~1800 chars",
+            "suggested_gems": ["zip", "nokogiri", "json"],
+            "confidence": 0.85
+          }
         PROMPT
       end
     end

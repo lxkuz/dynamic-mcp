@@ -9,7 +9,8 @@ module Books
         ` %x open_popen
       ].freeze
 
-      ALLOWED_REQUIRES = %w[json pdf-reader nokogiri rexml].freeze
+      # rubyzip is required as "zip"; zlib is stdlib (EPUB/ZIP inflate).
+      ALLOWED_REQUIRES = %w[json pdf-reader nokogiri rexml zip zlib].freeze
 
       FORBIDDEN_CONST = %w[
         FileUtils Dir IO Process Open3 Net::HTTP Net::HTTPS Socket TCPSocket
@@ -17,6 +18,10 @@ module Books
       ].freeze
 
       ALLOWED_FILE_METHODS = %w[read].freeze
+
+      ALLOWED_REQUIRE_PATTERN = Regexp.new(
+        "\\brequire(?:_relative)?\\s+['\"](?!#{ALLOWED_REQUIRES.map { |name| Regexp.escape(name) }.join("|")})"
+      ).freeze
 
       Result = Data.define(:safe, :violations) do
         def errors = violations
@@ -45,7 +50,7 @@ module Books
         list << "backticks forbidden" if @source.match?(/`[^`]*`/)
         list << "%x forbidden" if @source.include?("%x{") || @source.include?("%x(")
         list << "eval forbidden" if @source.match?(/\beval\s*\(/)
-        list << "require outside allowlist" if @source.match?(/\brequire(?:_relative)?\s+['"](?!json|pdf-reader|nokogiri|rexml)/)
+        list << "require outside allowlist" if @source.match?(ALLOWED_REQUIRE_PATTERN)
         list
       end
 

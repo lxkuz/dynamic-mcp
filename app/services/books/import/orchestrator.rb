@@ -294,6 +294,15 @@ module Books
             "Build sections from //body/section with title, plain_text, depth, children",
             "page_start/page_end optional for FB2 (omit or null)"
           ])
+        elsif format == "epub"
+          rules.concat([
+            "EPUB is a ZIP archive: require 'zip' (rubyzip) and Zip::File.open(ARGV[0])",
+            "Do NOT parse ZIP bytes manually; zlib alone is not enough — use Zip::File",
+            "Find OPF via zip.glob('**/*.opf') or META-INF/container.xml",
+            "Read spine XHTML/HTML with Nokogiri::HTML, extract body plain text",
+            "Split into virtual pages (~1800 chars); sections from nav/toc.ncx or spine",
+            "Do NOT use pdf-reader for EPUB; do NOT use File.binread/File.dirname/File.basename"
+          ])
         end
         rules
       end
@@ -302,6 +311,7 @@ module Books
         format = structure["detected_format"] || @book.source_format
         return CanonicalScriptTemplate.pdf_snippet if format.to_s == "pdf"
         return CanonicalScriptTemplate.fb2_snippet if format.to_s == "fb2"
+        return CanonicalScriptTemplate.epub_snippet if format.to_s == "epub"
 
         nil
       end

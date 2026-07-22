@@ -7,7 +7,8 @@ RUN apt-get update -qq && \
 RUN gem install json -v 2.7.2 && \
     gem install pdf-reader -v 2.14.1 && \
     gem install nokogiri -v 1.18.9 && \
-    gem install rexml -v 3.4.1
+    gem install rexml -v 3.4.1 && \
+    gem install rubyzip -v 2.3.2
 
 WORKDIR /data
 USER nobody

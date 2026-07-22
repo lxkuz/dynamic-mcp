@@ -6,7 +6,7 @@ module Books
           You write a Ruby parser script for a book file.
           Reads ARGV[0], prints JSON to stdout: puts JSON.generate(...)
 
-          Allowed requires: json, pdf-reader, nokogiri, rexml only.
+          Allowed requires: json, pdf-reader, nokogiri, rexml, zip, zlib only.
           No eval, shell, network, file writes, or raise.
 
           ## WRONG output (never do this)
@@ -82,7 +82,7 @@ module Books
             "sections" => sections
           )
 
-          Adapt for FB2/XML using nokogiri. Use input JSON fields: chapter_detection_strategy,
+          Adapt for FB2/XML using nokogiri, or EPUB using zip + nokogiri. Use input JSON fields: chapter_detection_strategy,
           toc_entries, build_toc_while_parsing, canonical_snippet, output_rules, reference_scripts.
 
           ## Example Ruby script for FB2 (follow this pattern)
@@ -124,6 +124,52 @@ module Books
           end
 
           puts JSON.generate("title" => title, "author" => author, "pages" => pages, "sections" => sections)
+
+          ## Example Ruby script for EPUB (follow this pattern)
+
+          require 'json'
+          require 'zip'
+          require 'nokogiri'
+
+          path = ARGV[0]
+          title = ''
+          author = ''
+          texts = []
+
+          Zip::File.open(path) do |zip|
+            opf_entry = zip.glob('**/*.opf').first
+            next unless opf_entry
+
+            opf = Nokogiri::XML(opf_entry.get_input_stream.read)
+            opf.remove_namespaces!
+            title = opf.at_xpath('//metadata/title')&.text.to_s.strip
+            author = opf.at_xpath('//metadata/creator')&.text.to_s.strip
+
+            manifest = {}
+            opf.xpath('//manifest/item').each { |item| manifest[item['id']] = item['href'].to_s }
+            opf.xpath('//spine/itemref').each do |itemref|
+              href = manifest[itemref['idref']].to_s
+              next if href.empty?
+              entry = zip.find_entry(href) || zip.glob('**/' + href.split('/').last).first
+              next unless entry
+              html = Nokogiri::HTML(entry.get_input_stream.read)
+              text = html.css('body').text.to_s.gsub(/\\s+/, ' ').strip
+              texts << text unless text.empty?
+            end
+          end
+
+          CHARS = 1800
+          pages = []
+          texts.each do |para|
+            if pages.empty? || pages.last.length + para.length + 2 > CHARS
+              pages << para
+            else
+              pages[-1] = pages.last + "\\n\\n" + para
+            end
+          end
+          pages = [texts.join("\\n\\n")] if pages.empty? && texts.any?
+
+          puts JSON.generate('title' => title, 'author' => author, 'pages' => pages, 'sections' => [])
 
           When reference_scripts is provided — proven working parsers for the same file format.
           Adapt the closest reference to current book structure (do not copy blindly).

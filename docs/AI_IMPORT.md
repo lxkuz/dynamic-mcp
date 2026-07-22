@@ -159,7 +159,7 @@ ActiveHarness собирает messages (system + user), вызывает DeepSe
 
 `ScriptStaticValidator` проверяет AST:
 
-- разрешены `require`: `json`, `pdf-reader`, `nokogiri`, `rexml`;
+- разрешены `require`: `json`, `pdf-reader`, `nokogiri`, `rexml`, `zip`, `zlib`;
 - запрещены: `eval`, `system`, ``, network, `raise`, запись файлов, и т.д.
 
 ## Библиотека успешных скриптов
